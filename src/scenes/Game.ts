@@ -6,10 +6,15 @@ export default class Demo extends Phaser.Scene {
     super("GameScene");
   }
   cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  player!: Phaser.Physics.Matter.Image;
+  hull!: Phaser.Physics.Matter.Image;
   sail!: Phaser.Physics.Matter.Image;
+  boat!: BodyType;
   wind!: BodyType;
   mainSheet!: MatterJS.ConstraintType;
+  text!: Phaser.GameObjects.Text;
+
+  graphics: any;
+  windAngle!: Phaser.Math.Euler;
 
   preload() {
     this.load.image("hull", "assets/hull.png");
@@ -19,98 +24,90 @@ export default class Demo extends Phaser.Scene {
   create() {
     this.matter.world.setBounds();
 
-    // this.player = this.physics.add.sprite(10, 45, "hull");
-    this.player = this.matter.add.image(400, 300, "hull");
-    this.player.scale = 0.3;
-    this.player.setRectangle(80, 40);
-    this.player.setRotation(Math.PI);
+    
+    this.hull = this.matter.add.image(400, 300, "hull");
+    // this.hull.set
+    this.hull.scale = 0.3;
+    this.hull.setRectangle(80, 40);
+    this.hull.setRotation(0);
+    this.hull.setOrigin()
 
-    this.sail = this.matter.add.image(400, 300, "sail");
-    this.sail.setMass(0.01);
-    this.sail.scale = 0.5;
-    this.sail.setRectangle(10, 70);
-    // this.sail.setPosition(700, 30);
-    // this.sail.setStatic(true);
-    // this.sail.setOrigin(0.1, 0.1);
-    // this.sail.centerOfMass.set(80,80)
-
-    /* Create hinge of boom to hull */
-
-    // let constraint = this.matter.constraint.create()
-
-    // Attach boom to mast
-    this.matter.add.constraint(
-      this.player.body as BodyType,
-      this.sail.body as BodyType,
-      0,
-      0.7,
-      {
-        pointA: { x: 0, y: 0 },
-        pointB: { x: 0, y: 30 },
-      }
-    );
-
-    // Attach main sheet
-    this.mainSheet = this.matter.add.constraint(
-      this.player.body as BodyType,
-      this.sail.body as BodyType,
-      30,
-      0.999,
-      {
-        pointA: { x: 30, y: 0 },
-        pointB: { x: 0, y: -30 },
-      }
-    );
-
-    this.player.setCollisionGroup(1);
-    // const sailGroup = this.matter.world.nextGroup();
-    this.sail.setCollisionGroup(2);
-    this.sail.setCollidesWith(0);
+    // this.sail = this.matter.add.image(400, 300, "sail");
+    // this.sail.setMass(0.01);
+    // this.sail.scale = 0.5;
+    // this.sail.setRectangle(10, 70);
 
     this.wind = this.matter.add.polygon(100, 100, 3, 20, {});
     this.wind.isStatic = true;
-    this.player.setFrictionAir(0.1);
-    this.player.setMass(40);
-    this.player.setFixedRotation();
+    
+    // this.boat = this.matter.body.create({
+    //   parts: [ this.sail.body as BodyType,
+    //     this.hull.body as BodyType
+    //   ]
+    // });
+    // this.matter.add.constraint(
+    //   this.player.body as BodyType,
+    //   this.sail.body as BodyType,
+    //   0,
+    //   1,
+    //   {
+    //     pointA: { x: 0, y: 0 },
+    //     pointB: { x: 0, y: 30 },
+    //   }
+    // );
+
+    // this.player.setCollisionGroup(1);
+    // const sailGroup = this.matter.world.nextGroup();
+    // this.sail.setCollisionGroup(2);
+    // this.sail.setCollidesWith(0);
 
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    this.text = this.add.text(
+      0,
+      0,
+      `Wind Angle: 0
+Sail Angle: 20'
+Wind Speed: 0
+    `,
+      { fontSize: "24px" }
+    );
+
+    this.graphics = this.add.graphics({
+      lineStyle: { width: 2, color: 0xaa00aa },
+    });
   }
 
   update(time: number, delta: number): void {
-    // this.sail.copyPosition(this.player.getCenter());
-    // this.sail.setRotation(this.player.rotation + Math.PI / 2);
-    // this.sail.setRotation(    Phaser.Math.Angle.BetweenPoints(
-    //   this.sail.body.position,
-    //   this.wind.position
-    // ));
+    // Velocity = Wind Speed * (cos(Wind Angle - Sail Angle))
 
-    // this.player.thrust(0.025);
-    // this.player.applyForceFrom(
-    //   new Phaser.Math.Vector2(this.wind.position),
-    //   new Phaser.Math.Vector2(0.01,0.01)
-    // );
-
-    if(this.mainSheet.length )
-
-    this.sail.applyForceFrom(
-      new Phaser.Math.Vector2(this.wind.position),
-      new Phaser.Math.Vector2(0.001, 0.001)
+    const sailAngle = (this.hull.rotation) - 0.5*Math.PI;
+    const vBoat = 0.1 * Math.max(5, 10 * Math.cos(0 - sailAngle ));
+    this.text.setText(
+      `Wind Angle: ${0}
+Sail Angle: ${this.hull.rotation}
+vWind: 10
+vBoat: ${vBoat} 
+    `
     );
-    console.log(this.mainSheet.length);
-    if (this.cursors.shift.isDown && this.cursors.up.isDown) {
-      if(this.mainSheet.length < 60)
-      this.mainSheet.length += 1;
-    } else if (this.cursors.shift.isDown && this.cursors.down.isDown) {
-      if(this.mainSheet.length > 20)
-      this.mainSheet.length -= 1;
-    } else if (this.cursors.up.isDown) {
-      this.player.thrust(0.025);
-    }
+    this.graphics.clear();
+
+    // this.sail.setVelocity()
+    // this.hull.thrust(0.0001);
+    // this.hull.thrust(0.00001 * vBoat);
+    this.hull.thrust(0.0001 * vBoat)
+    // this.hull.setVelocity(vBoat * Math.cos(this.hull.rotation), vBoat * Math.sin(this.hull.rotation));
     if (this.cursors.left.isDown) {
-      this.player.setAngularVelocity(0.05);
+      this.hull.angle += 1;
     }
     if (this.cursors.right.isDown) {
-      this.player.setAngularVelocity(-0.05);
+      this.hull.angle -= 1;
     }
+    // if (this.cursors.up.isDown) {
+    //   this.sail.rotation += 0.05;
+    // }
+    // if (this.cursors.down.isDown) {
+    //   this.sail.rotation -= 0.05;
+    // }
   }
 }
